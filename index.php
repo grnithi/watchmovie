@@ -9,6 +9,7 @@ require_once __DIR__ . '/lib/og.php';
 $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https' ? 'https' : 'http';
 $baseUrl = $scheme . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . rtrim(dirname($_SERVER['SCRIPT_NAME']), '/') . '/';
 traffic_log_request();
+header('Cache-Control: no-cache, must-revalidate'); // always fetch the latest page (assets are versioned via ?v=)
 ?>
 <!DOCTYPE html>
 <html lang="en">

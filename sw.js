@@ -1,7 +1,7 @@
 /* What To Watch - minimal service worker (makes the site installable).
  * Network-first for pages; falls back to cache when offline. API data is never cached here
  * (the server already caches it weekly). */
-const CACHE = 'wtw-shell-v1';
+const CACHE = 'wtw-shell-v2';
 
 self.addEventListener('install', (e) => {
     e.waitUntil(caches.open(CACHE).then((c) => c.addAll(['./'])).then(() => self.skipWaiting()));
@@ -21,7 +21,7 @@ self.addEventListener('fetch', (e) => {
     if (req.method !== 'GET' || url.origin !== location.origin || url.pathname.includes('/api/')) return;
 
     e.respondWith(
-        fetch(req)
+        fetch(req, req.mode === 'navigate' ? { cache: 'no-cache' } : undefined) // pages: skip the browser HTTP cache
             .then((res) => {
                 if (res.ok) {
                     const copy = res.clone();
