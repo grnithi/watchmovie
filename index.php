@@ -5,6 +5,9 @@
  */
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/lib/traffic.php';
+require_once __DIR__ . '/lib/og.php';
+$scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https' ? 'https' : 'http';
+$baseUrl = $scheme . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . rtrim(dirname($_SERVER['SCRIPT_NAME']), '/') . '/';
 traffic_log_request();
 ?>
 <!DOCTYPE html>
@@ -14,6 +17,7 @@ traffic_log_request();
     <base href="<?= htmlspecialchars(rtrim(dirname($_SERVER['SCRIPT_NAME']), '/') . '/') ?>">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="theme-color" content="#0b0d14">
+    <?= og_meta($baseUrl) ?>
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
     <link rel="icon" type="image/png" href="assets/icons/icon-192.png">
