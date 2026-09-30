@@ -32,35 +32,28 @@ jobs:
             printf "define('WATCHMODE_API_KEY', '%s');\n" "${WATCHMODE_API_KEY:-}"
           } > secrets.php
 
-      - name: Deploy via rsync
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          REMOTE_HOST: ${{ secrets.REMOTE_HOST }}
-          REMOTE_USER: ${{ secrets.REMOTE_USER }}
-        run: |
-          mkdir -p ~/.ssh
-          echo "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -H "$REMOTE_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
-
-          # Only ever touches the watchmovie/ subfolder of the radiovibe.app document root.
-          TARGET_PATH="~/public_html/website_9d71f2eb/watchmovie/"
-
-          # cache/ contents live only on the server: kept out of the sync and protected from --delete.
-          rsync -avz --delete \
-            -e "ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=no" \
-            --include 'cache/.htaccess' \
-            --include 'cache/.gitkeep' \
-            --exclude 'cache/*' \
-            --exclude '.git/' \
-            --exclude '.github/' \
-            --exclude '.gitignore' \
-            --exclude '.DS_Store' \
-            --exclude '_legacy/' \
-            --exclude 'secrets.example.php' \
-            --exclude 'README.md' \
-            ./ "$REMOTE_USER@$REMOTE_HOST:$TARGET_PATH"
+      # Uploads only changed files over encrypted FTPS. Deploy state is tracked in a
+      # small file on the server, so files removed from the repo are removed there too.
+      - name: Deploy via FTPS
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftps
+          port: 21
+          server-dir: ${{ secrets.FTP_SERVER_DIR }}
+          exclude: |
+            **/.git*
+            **/.git*/**
+            .github/**
+            .DS_Store
+            **/.DS_Store
+            _legacy/**
+            secrets.example.php
+            README.md
+            cache/**
 
       - name: Remove secrets from runner
         if: always()
-        run: rm -f secrets.php ~/.ssh/deploy_key
+        run: rm -f secrets.php
