@@ -1,0 +1,66 @@
+name: Deploy watchmovie
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-watchmovie
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Lint PHP
+        run: for f in $(find . -name '*.php' -not -path './.git/*'); do php -l "$f" >/dev/null || exit 1; done
+
+      - name: Generate secrets.php from GitHub secrets
+        env:
+          TMDB_ACCESS_TOKEN: ${{ secrets.TMDB_ACCESS_TOKEN }}
+          WATCHMODE_API_KEY: ${{ secrets.WATCHMODE_API_KEY }}
+        run: |
+          if [ -z "$TMDB_ACCESS_TOKEN" ]; then echo "::error::TMDB_ACCESS_TOKEN secret is missing"; exit 1; fi
+          {
+            echo "<?php"
+            printf "define('TMDB_ACCESS_TOKEN', '%s');\n" "$TMDB_ACCESS_TOKEN"
+            printf "define('WATCHMODE_API_KEY', '%s');\n" "${WATCHMODE_API_KEY:-}"
+          } > secrets.php
+
+      - name: Deploy via rsync
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          REMOTE_HOST: ${{ secrets.REMOTE_HOST }}
+          REMOTE_USER: ${{ secrets.REMOTE_USER }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "$REMOTE_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
+
+          # Only ever touches the watchmovie/ subfolder of the radiovibe.app document root.
+          TARGET_PATH="~/public_html/website_9d71f2eb/watchmovie/"
+
+          # cache/ contents live only on the server: kept out of the sync and protected from --delete.
+          rsync -avz --delete \
+            -e "ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=no" \
+            --include 'cache/.htaccess' \
+            --include 'cache/.gitkeep' \
+            --exclude 'cache/*' \
+            --exclude '.git/' \
+            --exclude '.github/' \
+            --exclude '.gitignore' \
+            --exclude '.DS_Store' \
+            --exclude '_legacy/' \
+            --exclude 'secrets.example.php' \
+            --exclude 'README.md' \
+            ./ "$REMOTE_USER@$REMOTE_HOST:$TARGET_PATH"
+
+      - name: Remove secrets from runner
+        if: always()
+        run: rm -f secrets.php ~/.ssh/deploy_key

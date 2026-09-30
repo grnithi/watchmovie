@@ -1,0 +1,5 @@
+# Pretty region routes: /india and /usa are served by index.php
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^(india|usa)/?$ index.php [L,NC]
+</IfModule>
