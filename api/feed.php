@@ -21,9 +21,11 @@ ini_set('display_errors', '0');
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET');
-header('Cache-Control: no-store');
 
 require_once __DIR__ . '/../config.php';
+
+// Local dev: never cache. Live: browsers may reuse a response for 10 minutes (server cache lasts until Wednesday).
+header('Cache-Control: ' . ((defined('DISABLE_CACHE') && DISABLE_CACHE) ? 'no-store' : 'public, max-age=600'));
 
 const LANGUAGES = [
     'ta' => 'Tamil',
@@ -43,6 +45,22 @@ const REGION_PROVIDERS = [
 /** True when a cache file is fresh enough to use (always false in local dev). */
 function cacheFresh(string $file, int $ttl): bool {
     return !(defined('DISABLE_CACHE') && DISABLE_CACHE) && is_file($file) && (time() - filemtime($file)) < $ttl;
+}
+
+/**
+ * Data refreshes once a week: the "cache week" starts every Wednesday 00:00 (APP_TIMEZONE).
+ * Returns that Wednesday (today, if today is Wednesday).
+ */
+function cacheWeekStart(): DateTime {
+    $tz = new DateTimeZone(defined('APP_TIMEZONE') ? APP_TIMEZONE : 'America/New_York');
+    $d = new DateTime('today', $tz);
+    $back = ((int)$d->format('w') - 3 + 7) % 7; // 3 = Wednesday
+    return $d->modify("-{$back} days");
+}
+
+/** True when the file was written during the current Wednesday-to-Tuesday cache week (never in local dev). */
+function cacheFreshThisWeek(string $file): bool {
+    return !(defined('DISABLE_CACHE') && DISABLE_CACHE) && is_file($file) && filemtime($file) >= cacheWeekStart()->getTimestamp();
 }
 
 function cacheDir(string $sub = ''): string {
@@ -127,36 +145,27 @@ function getGenreMap(): array {
     return $map;
 }
 
-/** Date window for the requested range, plus a human label. */
+/**
+ * Date window for the requested range, anchored to the cache week's Wednesday so a
+ * week's cached result is internally consistent. Returns [from, to, label].
+ *   week     = Wed .. next Wed      weekend  = that week's Fri-Sun
+ *   upcoming = Wed .. +30 days      recent   = 30 days before Wed
+ */
 function dateWindow(string $range): array {
-    $tz = new DateTimeZone(defined('APP_TIMEZONE') ? APP_TIMEZONE : 'America/New_York');
-    $now = new DateTime('today', $tz);
-    $dow = (int)$now->format('w');
-
+    $wed = cacheWeekStart();
+    $fmt = fn(DateTime $d) => $d->format('Y-m-d');
     if ($range === 'recent') {
-        $start = (clone $now)->modify('-30 days');
-        return [$start->format('Y-m-d'), $now->format('Y-m-d'), 'Last 30 days'];
+        return [$fmt((clone $wed)->modify('-30 days')), $fmt($wed), 'Last 30 days'];
     }
     if ($range === 'week') {
-        $end = (clone $now)->modify('+7 days');
-        return [$now->format('Y-m-d'), $end->format('Y-m-d'), 'Next 7 days'];
+        return [$fmt($wed), $fmt((clone $wed)->modify('+7 days')), 'Next 7 days'];
     }
     if ($range === 'upcoming') {
-        $end = (clone $now)->modify('+30 days');
-        return [$now->format('Y-m-d'), $end->format('Y-m-d'), 'Next 30 days'];
+        return [$fmt($wed), $fmt((clone $wed)->modify('+30 days')), 'Next 30 days'];
     }
-    // weekend (Fri-Sun): Mon-Thu -> coming Fri; Fri-Sun -> the current weekend
-    if ($dow >= 1 && $dow <= 4) {
-        $fri = (clone $now)->modify('next friday');
-    } elseif ($dow === 5) {
-        $fri = clone $now;
-    } elseif ($dow === 6) {
-        $fri = (clone $now)->modify('-1 day');
-    } else {
-        $fri = (clone $now)->modify('-2 days');
-    }
-    $sun = (clone $fri)->modify('+2 days');
-    return [$fri->format('Y-m-d'), $sun->format('Y-m-d'), $fri->format('D M j') . ' – ' . $sun->format('D M j')];
+    $fri = (clone $wed)->modify('+2 days');
+    $sun = (clone $wed)->modify('+4 days');
+    return [$fmt($fri), $fmt($sun), $fri->format('D M j') . ' – ' . $sun->format('D M j')];
 }
 
 /**
@@ -169,7 +178,7 @@ function getDetails(array $ids, string $type): array {
     $need = [];
     foreach ($ids as $id) {
         $file = "$dir/{$type}_{$id}.json";
-        if (cacheFresh($file, 12 * 3600)) {
+        if (cacheFreshThisWeek($file)) {
             $c = json_decode((string)file_get_contents($file), true);
             if (is_array($c)) {
                 $out[$id] = $c;
@@ -253,7 +262,7 @@ function getWatchmodeAdditions(string $type, string $region, string $from, strin
     $file = cacheDir('feed') . '/wm_' . $from . '_' . $to . '.json';
     $ttl = defined('CACHE_DURATION') ? CACHE_DURATION : 21600;
     $rows = null;
-    if (cacheFresh($file, $ttl)) {
+    if (cacheFreshThisWeek($file)) {
         $rows = json_decode((string)file_get_contents($file), true);
     }
     if (!is_array($rows)) {
@@ -350,7 +359,7 @@ try {
     $type   = ($_GET['type'] ?? 'movie') === 'tv' ? 'tv' : 'movie';
     $region = strtoupper((string)($_GET['region'] ?? 'US')) === 'IN' ? 'IN' : 'US';
     $range  = in_array($_GET['range'] ?? '', ['weekend', 'week', 'upcoming', 'recent'], true) ? $_GET['range'] : 'weekend';
-    $force  = ($_GET['refresh'] ?? '') === '1';
+    $force  = ($_GET['refresh'] ?? '') === '1' && defined('DISABLE_CACHE') && DISABLE_CACHE; // public visitors can't force upstream calls
 
     if ($mode === 'theatrical' && $type === 'tv') {
         $type = 'movie'; // TV shows don't have a theatrical run
@@ -358,9 +367,9 @@ try {
 
     [$from, $to, $label] = dateWindow($range);
 
-    $cacheFile = cacheDir('feed') . "/{$mode}_{$type}_{$region}_{$range}_" . date('Ymd') . '.json';
+    $cacheFile = cacheDir('feed') . "/{$mode}_{$type}_{$region}_{$range}_" . cacheWeekStart()->format('Ymd') . '.json';
     $ttl = defined('CACHE_DURATION') ? CACHE_DURATION : 21600;
-    if (!$force && cacheFresh($cacheFile, $ttl)) {
+    if (!$force && cacheFreshThisWeek($cacheFile)) {
         $cached = json_decode((string)file_get_contents($cacheFile), true);
         if (is_array($cached)) {
             $cached['cached'] = true;
@@ -512,7 +521,6 @@ try {
             'language'      => LANGUAGES[$item['_lang']] ?? 'Other',
             'language_code' => $item['_lang'],
             'release_date'  => $date,
-            'is_released'   => $date !== '' && $date <= $today,
             'is_new'        => $isNew,
             'overview'      => $item['overview'] ?? '',
             'tagline'       => $d['tagline'] ?? '',
@@ -539,6 +547,7 @@ try {
         'range'        => $range,
         'window'       => ['from' => $from, 'to' => $to, 'label' => $label],
         'generated_at' => date('c'),
+        'refreshes_on' => (clone cacheWeekStart())->modify('+7 days')->format('Y-m-d'),
         'releases'     => $releases,
     ];
     @file_put_contents($cacheFile, json_encode($result, JSON_UNESCAPED_SLASHES));

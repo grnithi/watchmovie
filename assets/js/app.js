@@ -67,6 +67,8 @@
     }
 
     /* ---------- labels ---------- */
+    const todayStr = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; })();
+    const isReleased = (it) => !!it.release_date && it.release_date <= todayStr;
     function dateBadge(it) {
         if (it.type === 'tv') {
             if (it.is_new) return { cls: 'new', text: 'New series' };
@@ -74,9 +76,9 @@
         }
         const when = fmtDate(it.release_date);
         if (state.mode === 'theatrical') {
-            return it.is_released ? { cls: 'live', text: 'In theatres' } : { cls: 'soon', text: `Opens ${when}` };
+            return isReleased(it) ? { cls: 'live', text: 'In theatres' } : { cls: 'soon', text: `Opens ${when}` };
         }
-        return it.is_released ? { cls: 'live', text: `Out ${when}` } : { cls: 'soon', text: `Streams ${when}` };
+        return isReleased(it) ? { cls: 'live', text: `Out ${when}` } : { cls: 'soon', text: `Streams ${when}` };
     }
 
     /* ---------- data ---------- */
