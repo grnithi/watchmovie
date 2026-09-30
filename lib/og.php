@@ -22,12 +22,12 @@ function og_pick_movie(): ?array
 function og_meta(string $baseUrl): string
 {
     $movie = og_pick_movie();
-    $title = 'What To Watch | New OTT & Theatre Releases';
-    $desc = "See what's new on Netflix, Prime Video, JioHotstar and more, and what's in theatres: Tamil, Telugu, Hindi, Malayalam, Kannada and English.";
+    $title = 'Bored this weekend? 🍿 Find your next watch';
+    $desc = 'Movies & shows for date night or family time, on OTT and in theatres.';
     $image = $baseUrl . 'assets/icons/og-default.png';
     if ($movie) {
         $image = str_replace('/t/p/w780/', '/t/p/w1280/', $movie['backdrop']);
-        $desc = "Now: {$movie['title']} ({$movie['language']}). " . $desc;
+        $desc .= " Now: {$movie['title']} ({$movie['language']}).";
     }
     $e = fn($s) => htmlspecialchars($s, ENT_QUOTES);
     return implode("\n    ", [
