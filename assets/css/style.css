@@ -173,7 +173,9 @@ img { display: block; max-width: 100%; }
 .btn.primary:hover { filter: brightness(1.1); }
 .btn.ghost { background: none; color: var(--muted); }
 
-.footer { padding-bottom: 40px; color: var(--muted); font-size: 0.8rem; text-align: center; }
+.footer { padding-bottom: 40px; color: var(--muted); font-size: 0.8rem; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.footer-link { color: #c7cce0; font-weight: 600; padding: 8px 16px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); transition: all .15s; }
+.footer-link:hover { color: #fff; border-color: var(--accent); }
 
 /* ---------- modal ---------- */
 .modal { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 16px; }

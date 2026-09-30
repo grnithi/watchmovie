@@ -93,6 +93,7 @@ require_once __DIR__ . '/config.php';
 
     <footer class="footer container">
         <span id="footerText">Release dates and availability can change — check the platform for the latest.</span>
+    <a class="footer-link" href="https://radiovibe.app/">← Back to RadioVibe</a>
     </footer>
 
     <div class="modal" id="modal" hidden>
