@@ -358,7 +358,7 @@ try {
     $mode   = ($_GET['mode'] ?? 'ott') === 'theatrical' ? 'theatrical' : 'ott';
     $type   = ($_GET['type'] ?? 'movie') === 'tv' ? 'tv' : 'movie';
     $region = strtoupper((string)($_GET['region'] ?? 'IN')) === 'US' ? 'US' : 'IN';
-    $range  = in_array($_GET['range'] ?? '', ['weekend', 'week', 'upcoming', 'recent'], true) ? $_GET['range'] : 'weekend';
+    $range  = in_array($_GET['range'] ?? '', ['weekend', 'week', 'upcoming', 'recent'], true) ? $_GET['range'] : 'upcoming';
     $force  = ($_GET['refresh'] ?? '') === '1' && defined('DISABLE_CACHE') && DISABLE_CACHE; // public visitors can't force upstream calls
 
     if ($mode === 'theatrical' && $type === 'tv') {
@@ -367,7 +367,7 @@ try {
 
     [$from, $to, $label] = dateWindow($range);
 
-    $cacheFile = cacheDir('feed') . "/{$mode}_{$type}_{$region}_{$range}_" . cacheWeekStart()->format('Ymd') . '.json';
+    $cacheFile = cacheDir('feed') . "/{$mode}_{$type}_{$region}_{$range}_" . cacheWeekStart()->format('Ymd') . '_v2.json'; // bump _vN to invalidate all cached feeds on deploy
     $ttl = defined('CACHE_DURATION') ? CACHE_DURATION : 21600;
     if (!$force && cacheFreshThisWeek($cacheFile)) {
         $cached = json_decode((string)file_get_contents($cacheFile), true);

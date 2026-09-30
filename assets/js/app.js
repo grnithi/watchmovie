@@ -16,6 +16,9 @@
     const fromSlug = { usa: 'US', india: 'IN' };
     const pick = (v, allowed, fallback) => (allowed.includes(v) ? v : fallback);
 
+    // One-time reset: the default range changed to "Next 30 days", so drop previously auto-saved ranges.
+    if (store.get('w_ver', '') !== '2') { try { localStorage.removeItem('w_range'); } catch (e) { /* ignore */ } store.set('w_ver', '2'); }
+
     // Remembered choices (localStorage) win over the URL, so a reload never changes the selection.
     // The URL (/india?mode=ott&type=tv&range=week) only applies when nothing is saved yet.
     const urlParams = new URLSearchParams(location.search);
@@ -25,7 +28,7 @@
         mode: pick(store.get('w_mode', '') || urlParams.get('mode'), ['ott', 'theatrical'], 'ott'),
         type: pick(store.get('w_type', '') || urlParams.get('type'), ['movie', 'tv'], 'movie'),
         region: pick(store.get('w_region', '') || fromSlug[pathSlug], ['US', 'IN'], 'IN'),
-        range: pick(store.get('w_range', '') || urlParams.get('range'), ['weekend', 'week', 'upcoming', 'recent'], 'weekend'),
+        range: pick(store.get('w_range', '') || urlParams.get('range'), ['weekend', 'week', 'upcoming', 'recent'], 'upcoming'),
         language: 'all',
         platform: 'all',
         sort: 'popular',

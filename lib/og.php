@@ -5,7 +5,7 @@
  */
 function og_pick_movie(): ?array
 {
-    $files = glob(__DIR__ . '/../cache/feed/*_movie_IN_*.json') ?: [];
+    $files = glob(__DIR__ . '/../cache/feed/*_movie_IN_*_v2.json') ?: [];
     usort($files, fn($a, $b) => filemtime($b) <=> filemtime($a));
     foreach ($files as $f) {
         $data = json_decode((string)@file_get_contents($f), true);
