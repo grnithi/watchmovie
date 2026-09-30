@@ -417,15 +417,8 @@
 
     const text = document.getElementById('installText');
     const bannerBtn = document.getElementById('installBtn');
-    const KEY = 'w_install_dismissed';
-    const recentlyDismissed = () => {
-        try { return Date.now() - (+localStorage.getItem(KEY) || 0) < 864e5; } catch (e) { return false; } // 1 day
-    };
-    document.getElementById('installClose').addEventListener('click', () => {
-        try { localStorage.setItem(KEY, String(Date.now())); } catch (e) { /* ignore */ }
-        banner.hidden = true;
-        resetBanner(); // manual-steps text must not stick around for the next time it shows
-    });
+    // Dismissing only hides the banner until the next page load (nothing is remembered).
+    document.getElementById('installClose').addEventListener('click', () => { banner.hidden = true; });
 
     const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
     const isSafari = /safari/i.test(navigator.userAgent) && !/crios|fxios|edgios/i.test(navigator.userAgent);
@@ -456,15 +449,16 @@
         e.preventDefault();
         deferred = e;
         resetBanner();
-        if (!recentlyDismissed() && !standalone) banner.hidden = false;
+        if (!standalone) banner.hidden = false;
     });
     window.addEventListener('appinstalled', () => { banner.hidden = true; });
 
-    if (iosManual && !standalone) {
-        if (!recentlyDismissed()) {
+    // Show the banner on every page load (unless running as the installed app).
+    if (!standalone) {
+        if (iosManual) {
             text.textContent = 'Install: tap Share ⎙ then "Add to Home Screen"';
             bannerBtn.hidden = true;
-            banner.hidden = false;
         }
+        banner.hidden = false;
     }
 })();
