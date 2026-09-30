@@ -24,12 +24,14 @@ jobs:
         env:
           TMDB_ACCESS_TOKEN: ${{ secrets.TMDB_ACCESS_TOKEN }}
           WATCHMODE_API_KEY: ${{ secrets.WATCHMODE_API_KEY }}
+          STATS_KEY: ${{ secrets.STATS_KEY }}
         run: |
           if [ -z "$TMDB_ACCESS_TOKEN" ]; then echo "::error::TMDB_ACCESS_TOKEN secret is missing"; exit 1; fi
           {
             echo "<?php"
             printf "define('TMDB_ACCESS_TOKEN', '%s');\n" "$TMDB_ACCESS_TOKEN"
             printf "define('WATCHMODE_API_KEY', '%s');\n" "${WATCHMODE_API_KEY:-}"
+            if [ -n "$STATS_KEY" ]; then printf "define('STATS_KEY', '%s');\n" "$STATS_KEY"; fi
           } > secrets.php
 
       # Uploads only changed files over encrypted FTPS. Deploy state is tracked in a

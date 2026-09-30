@@ -396,3 +396,56 @@
 
     document.addEventListener('DOMContentLoaded', init);
 })();
+
+/* PWA: service worker + "Add to Home screen" prompt */
+(function () {
+    'use strict';
+    const base = document.querySelector('base') ? document.querySelector('base').href : './';
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => navigator.serviceWorker.register(base + 'sw.js', { scope: base }).catch(() => {}));
+    }
+
+    const standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+    const banner = document.getElementById('installBanner');
+    if (!banner || standalone) return;
+
+    const KEY = 'w_install_dismissed';
+    const dismissedAt = () => { try { return +localStorage.getItem(KEY) || 0; } catch (e) { return 0; } };
+    const recentlyDismissed = () => Date.now() - dismissedAt() < 14 * 864e5;
+    const hide = () => { banner.hidden = true; };
+    document.getElementById('installClose').addEventListener('click', () => {
+        try { localStorage.setItem(KEY, String(Date.now())); } catch (e) { /* ignore */ }
+        hide();
+    });
+
+    let deferred = null;
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferred = e;
+        if (!recentlyDismissed()) banner.hidden = false;
+    });
+    document.getElementById('installBtn').addEventListener('click', async () => {
+        if (deferred) {
+            deferred.prompt();
+            await deferred.userChoice.catch(() => {});
+            deferred = null;
+            hide();
+        } else {
+            alertIos();
+        }
+    });
+    window.addEventListener('appinstalled', hide);
+
+    // iOS Safari has no install event: show manual instructions instead.
+    const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+    const isSafari = /safari/i.test(navigator.userAgent) && !/crios|fxios|edgios/i.test(navigator.userAgent);
+    function alertIos() {
+        document.getElementById('installText').textContent = 'Tap Share, then "Add to Home Screen"';
+        document.getElementById('installBtn').hidden = true;
+    }
+    if (isIos && isSafari && !recentlyDismissed()) {
+        document.getElementById('installText').textContent = 'Install: tap Share ⎙ then "Add to Home Screen"';
+        document.getElementById('installBtn').hidden = true;
+        banner.hidden = false;
+    }
+})();

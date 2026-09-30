@@ -4,6 +4,8 @@
  * Data comes from api/feed.php (TMDB).
  */
 require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/lib/traffic.php';
+traffic_log_request();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -12,6 +14,13 @@ require_once __DIR__ . '/config.php';
     <base href="<?= htmlspecialchars(rtrim(dirname($_SERVER['SCRIPT_NAME']), '/') . '/') ?>">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="theme-color" content="#0b0d14">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+    <link rel="icon" type="image/png" href="assets/icons/icon-192.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="What To Watch">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>What To Watch | OTT &amp; Theatre Releases</title>
     <meta name="description" content="See what's new on Netflix, Prime Video, JioHotstar and more, and what's playing in theatres — movies and TV shows in Tamil, Telugu, Hindi, Malayalam, Kannada and English.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -95,6 +104,12 @@ require_once __DIR__ . '/config.php';
         <span id="footerText">Release dates and availability can change — check the platform for the latest.</span>
     <a class="footer-link" href="https://radiovibe.app/">← Back to RadioVibe</a>
     </footer>
+
+    <div class="install-banner" id="installBanner" hidden>
+        <span class="install-text" id="installText">Install What To Watch for quick access</span>
+        <button class="install-btn" id="installBtn">Install</button>
+        <button class="install-close" id="installClose" aria-label="Dismiss">✕</button>
+    </div>
 
     <div class="modal" id="modal" hidden>
         <div class="modal-backdrop" data-close></div>
