@@ -55,6 +55,9 @@ function traffic_log_request(): void
 {
     if (PHP_SAPI === 'cli' || ($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'GET') return;
 
+    // Skip the service worker's own background fetch of the page (not a real visit).
+    if (stripos($_SERVER['HTTP_REFERER'] ?? '', '/sw.js') !== false) return;
+
     $ip = traffic_client_ip();
     $ua = $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown';
     $page = traffic_categorize();
@@ -86,4 +89,30 @@ function traffic_log_request(): void
             @file_put_contents(TRAFFIC_LOG, implode("\n", array_slice($lines, -5000)) . "\n", LOCK_EX);
         }
     }
+}
+
+/**
+ * Country lookup by IP for hosts without a CDN country header. Results are cached forever in
+ * cache/geo_cache.json; at most $budget new lookups per call (free ipwho.is service, HTTPS).
+ * Returns [ip => ['name'=>..,'code'=>..,'flag'=>..]] for the requested IPs (missing = unresolved).
+ */
+function traffic_geo_resolve(array $ips, int $budget = 15): array
+{
+    $file = __DIR__ . '/../cache/geo_cache.json';
+    $cache = json_decode((string)@file_get_contents($file), true) ?: [];
+    $dirty = false;
+    foreach (array_unique($ips) as $ip) {
+        if (isset($cache[$ip]) || $budget <= 0 || !filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) continue;
+        $budget--;
+        $ctx = stream_context_create(['http' => ['timeout' => 2]]);
+        $res = json_decode((string)@file_get_contents('https://ipwho.is/' . rawurlencode($ip) . '?fields=success,country,country_code', false, $ctx), true);
+        if (!$res) continue; // network error: retry next time
+        $code = strtoupper($res['country_code'] ?? '');
+        $cache[$ip] = !empty($res['success']) && strlen($code) === 2
+            ? ['name' => $res['country'], 'code' => $code, 'flag' => mb_chr(ord($code[0]) + 127397) . mb_chr(ord($code[1]) + 127397)]
+            : ['name' => 'Unknown', 'code' => '', 'flag' => '🌐'];
+        $dirty = true;
+    }
+    if ($dirty) @file_put_contents($file, json_encode($cache, JSON_UNESCAPED_UNICODE), LOCK_EX);
+    return $cache;
 }

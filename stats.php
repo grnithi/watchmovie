@@ -4,6 +4,7 @@
  * If STATS_KEY is defined in secrets.php, open as /stats.php?key=YOUR_KEY.
  */
 require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/lib/traffic.php';
 if (defined('STATS_KEY') && STATS_KEY !== '' && !hash_equals(STATS_KEY, (string)($_GET['key'] ?? ''))) {
     http_response_code(404);
     exit('Not found');
@@ -93,6 +94,16 @@ if ($maxDailyHits < 10) {
 
 // Recent visitors: last 100 entries, newest first
 $recentVisitors = array_slice(array_reverse($entries), 0, 100);
+
+// Fill in countries the log couldn't know (no CDN header) via cached IP lookup.
+$geo = traffic_geo_resolve(array_column(array_filter($recentVisitors, fn($v) => ($v['country'] ?? 'Unknown') === 'Unknown'), 'ip'));
+foreach ($recentVisitors as &$v) {
+    if (($v['country'] ?? 'Unknown') === 'Unknown' && isset($geo[$v['ip'] ?? ''])) {
+        $v['country'] = $geo[$v['ip']]['name'];
+        $v['flag'] = $geo[$v['ip']]['flag'];
+    }
+}
+unset($v);
 
 $categoryColors = [
     'Home'          => 'bg-blue-500',
