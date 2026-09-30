@@ -22,8 +22,8 @@ if (is_file(__DIR__ . '/secrets.php')) {
 // Cache duration in seconds (6 hours = 6 * 3600 = 21600 seconds)
 define('CACHE_DURATION', 21600);
 
-// Default region for streaming availability (US)
-define('DEFAULT_REGION', 'US');
+// Default region for streaming availability (India)
+define('DEFAULT_REGION', 'IN');
 
 // Target language filter (ta = Tamil ISO 639-1)
 define('TARGET_LANGUAGE', 'ta');

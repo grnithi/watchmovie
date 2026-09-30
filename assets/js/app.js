@@ -23,7 +23,7 @@
     const state = {
         mode: pick(urlParams.get('mode') || store.get('w_mode', 'ott'), ['ott', 'theatrical'], 'ott'),
         type: pick(urlParams.get('type') || store.get('w_type', 'movie'), ['movie', 'tv'], 'movie'),
-        region: fromSlug[pathSlug] || pick(store.get('w_region', 'US'), ['US', 'IN'], 'US'),
+        region: fromSlug[pathSlug] || pick(store.get('w_region', 'IN'), ['US', 'IN'], 'IN'),
         range: pick(urlParams.get('range') || store.get('w_range', 'weekend'), ['weekend', 'week', 'upcoming', 'recent'], 'weekend'),
         language: 'all',
         platform: 'all',

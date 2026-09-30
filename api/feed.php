@@ -357,7 +357,7 @@ try {
 
     $mode   = ($_GET['mode'] ?? 'ott') === 'theatrical' ? 'theatrical' : 'ott';
     $type   = ($_GET['type'] ?? 'movie') === 'tv' ? 'tv' : 'movie';
-    $region = strtoupper((string)($_GET['region'] ?? 'US')) === 'IN' ? 'IN' : 'US';
+    $region = strtoupper((string)($_GET['region'] ?? 'IN')) === 'US' ? 'US' : 'IN';
     $range  = in_array($_GET['range'] ?? '', ['weekend', 'week', 'upcoming', 'recent'], true) ? $_GET['range'] : 'weekend';
     $force  = ($_GET['refresh'] ?? '') === '1' && defined('DISABLE_CACHE') && DISABLE_CACHE; // public visitors can't force upstream calls
 
