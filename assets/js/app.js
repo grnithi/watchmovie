@@ -424,11 +424,14 @@
     document.getElementById('installClose').addEventListener('click', () => {
         try { localStorage.setItem(KEY, String(Date.now())); } catch (e) { /* ignore */ }
         banner.hidden = true;
+        resetBanner(); // manual-steps text must not stick around for the next time it shows
     });
 
     const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
     const isSafari = /safari/i.test(navigator.userAgent) && !/crios|fxios|edgios/i.test(navigator.userAgent);
     const iosManual = isIos && isSafari; // Safari has no install event: show instructions instead
+    const defaultText = text.textContent;
+    const resetBanner = () => { text.textContent = defaultText; bannerBtn.hidden = false; };
     let deferred = null;
 
     async function install() {
@@ -452,6 +455,7 @@
     window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault();
         deferred = e;
+        resetBanner();
         if (!recentlyDismissed() && !standalone) banner.hidden = false;
     });
     window.addEventListener('appinstalled', () => { banner.hidden = true; });
