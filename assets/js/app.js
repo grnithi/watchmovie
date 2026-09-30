@@ -413,7 +413,7 @@
     const standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
     const banner = document.getElementById('installBanner');
     const topBtn = document.getElementById('installTopBtn');
-    if (!banner || standalone) return;
+    if (!banner || !topBtn) return;
 
     const text = document.getElementById('installText');
     const bannerBtn = document.getElementById('installBtn');
@@ -437,7 +437,6 @@
             await deferred.userChoice.catch(() => {});
             deferred = null;
             banner.hidden = true;
-            topBtn.hidden = true;
         } else {
             // No install event (iOS Safari, incognito, in-app browsers...): show manual steps.
             text.textContent = iosManual
@@ -453,13 +452,11 @@
     window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault();
         deferred = e;
-        topBtn.hidden = false;
-        if (!recentlyDismissed()) banner.hidden = false;
+        if (!recentlyDismissed() && !standalone) banner.hidden = false;
     });
-    window.addEventListener('appinstalled', () => { banner.hidden = true; topBtn.hidden = true; });
+    window.addEventListener('appinstalled', () => { banner.hidden = true; });
 
-    topBtn.hidden = false; // always visible unless the app is already installed
-    if (iosManual) {
+    if (iosManual && !standalone) {
         if (!recentlyDismissed()) {
             text.textContent = 'Install: tap Share ⎙ then "Add to Home Screen"';
             bannerBtn.hidden = true;
