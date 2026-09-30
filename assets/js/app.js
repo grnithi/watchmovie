@@ -16,15 +16,16 @@
     const fromSlug = { usa: 'US', india: 'IN' };
     const pick = (v, allowed, fallback) => (allowed.includes(v) ? v : fallback);
 
-    // URL wins over remembered choices: /india?mode=ott&type=tv&range=week
+    // Remembered choices (localStorage) win over the URL, so a reload never changes the selection.
+    // The URL (/india?mode=ott&type=tv&range=week) only applies when nothing is saved yet.
     const urlParams = new URLSearchParams(location.search);
     const pathSlug = location.pathname.replace(/\/+$/, '').split('/').pop().toLowerCase();
 
     const state = {
-        mode: pick(urlParams.get('mode') || store.get('w_mode', 'ott'), ['ott', 'theatrical'], 'ott'),
-        type: pick(urlParams.get('type') || store.get('w_type', 'movie'), ['movie', 'tv'], 'movie'),
-        region: fromSlug[pathSlug] || pick(store.get('w_region', 'IN'), ['US', 'IN'], 'IN'),
-        range: pick(urlParams.get('range') || store.get('w_range', 'weekend'), ['weekend', 'week', 'upcoming', 'recent'], 'weekend'),
+        mode: pick(store.get('w_mode', '') || urlParams.get('mode'), ['ott', 'theatrical'], 'ott'),
+        type: pick(store.get('w_type', '') || urlParams.get('type'), ['movie', 'tv'], 'movie'),
+        region: pick(store.get('w_region', '') || fromSlug[pathSlug], ['US', 'IN'], 'IN'),
+        range: pick(store.get('w_range', '') || urlParams.get('range'), ['weekend', 'week', 'upcoming', 'recent'], 'weekend'),
         language: 'all',
         platform: 'all',
         sort: 'popular',
@@ -356,6 +357,7 @@
         segHandler('regionSeg', 'region', 'region', true);
 
         if (state.mode === 'theatrical' && state.type === 'tv') state.type = 'movie';
+        ['mode', 'type', 'range', 'region'].forEach((k) => store.set('w_' + k, state[k]));
 
         el.langChips.addEventListener('click', (e) => {
             const c = e.target.closest('.chip'); if (!c) return;
