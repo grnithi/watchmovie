@@ -3,3 +3,14 @@
     RewriteEngine On
     RewriteRule ^(india|usa)/?$ index.php [L,NC]
 </IfModule>
+
+# Hide deploy bookkeeping file
+<Files ".ftp-deploy-sync-state.json">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order Allow,Deny
+        Deny from all
+    </IfModule>
+</Files>
