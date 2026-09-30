@@ -438,8 +438,11 @@
             deferred = null;
             banner.hidden = true;
             topBtn.hidden = true;
-        } else if (iosManual) {
-            text.textContent = 'Tap Share ⎙ then "Add to Home Screen"';
+        } else {
+            // No install event (iOS Safari, incognito, in-app browsers...): show manual steps.
+            text.textContent = iosManual
+                ? 'Tap Share ⎙ then "Add to Home Screen"'
+                : 'Open your browser menu ⋮ and choose "Install app" or "Add to Home screen" (not available in incognito)';
             bannerBtn.hidden = true;
             banner.hidden = false;
         }
@@ -455,8 +458,8 @@
     });
     window.addEventListener('appinstalled', () => { banner.hidden = true; topBtn.hidden = true; });
 
+    topBtn.hidden = false; // always visible unless the app is already installed
     if (iosManual) {
-        topBtn.hidden = false;
         if (!recentlyDismissed()) {
             text.textContent = 'Install: tap Share ⎙ then "Add to Home Screen"';
             bannerBtn.hidden = true;
