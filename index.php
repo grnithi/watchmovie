@@ -53,6 +53,7 @@ traffic_log_request();
                     <button class="seg-btn" data-region="US" role="radio">🇺🇸 <span>USA</span></button>
                     <button class="seg-btn" data-region="IN" role="radio">🇮🇳 <span>India</span></button>
                 </div>
+                <button id="installTopBtn" class="install-top" hidden title="Install app" aria-label="Install app">⬇ <span>Install</span></button>
                 <button id="refreshBtn" class="icon-btn"<?= DISABLE_CACHE ? '' : ' hidden' ?> title="Refresh" aria-label="Refresh">
                     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
                 </button>

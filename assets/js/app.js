@@ -402,7 +402,7 @@
     document.addEventListener('DOMContentLoaded', init);
 })();
 
-/* PWA: service worker + "Add to Home screen" prompt */
+/* PWA: service worker + install banner + permanent top-bar "Install" button */
 (function () {
     'use strict';
     const base = document.querySelector('base') ? document.querySelector('base').href : './';
@@ -412,45 +412,55 @@
 
     const standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
     const banner = document.getElementById('installBanner');
+    const topBtn = document.getElementById('installTopBtn');
     if (!banner || standalone) return;
 
+    const text = document.getElementById('installText');
+    const bannerBtn = document.getElementById('installBtn');
     const KEY = 'w_install_dismissed';
-    const dismissedAt = () => { try { return +localStorage.getItem(KEY) || 0; } catch (e) { return 0; } };
-    const recentlyDismissed = () => Date.now() - dismissedAt() < 14 * 864e5;
-    const hide = () => { banner.hidden = true; };
+    const recentlyDismissed = () => {
+        try { return Date.now() - (+localStorage.getItem(KEY) || 0) < 864e5; } catch (e) { return false; } // 1 day
+    };
     document.getElementById('installClose').addEventListener('click', () => {
         try { localStorage.setItem(KEY, String(Date.now())); } catch (e) { /* ignore */ }
-        hide();
+        banner.hidden = true;
     });
 
+    const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+    const isSafari = /safari/i.test(navigator.userAgent) && !/crios|fxios|edgios/i.test(navigator.userAgent);
+    const iosManual = isIos && isSafari; // Safari has no install event: show instructions instead
     let deferred = null;
-    window.addEventListener('beforeinstallprompt', (e) => {
-        e.preventDefault();
-        deferred = e;
-        if (!recentlyDismissed()) banner.hidden = false;
-    });
-    document.getElementById('installBtn').addEventListener('click', async () => {
+
+    async function install() {
         if (deferred) {
             deferred.prompt();
             await deferred.userChoice.catch(() => {});
             deferred = null;
-            hide();
-        } else {
-            alertIos();
+            banner.hidden = true;
+            topBtn.hidden = true;
+        } else if (iosManual) {
+            text.textContent = 'Tap Share ⎙ then "Add to Home Screen"';
+            bannerBtn.hidden = true;
+            banner.hidden = false;
         }
-    });
-    window.addEventListener('appinstalled', hide);
-
-    // iOS Safari has no install event: show manual instructions instead.
-    const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
-    const isSafari = /safari/i.test(navigator.userAgent) && !/crios|fxios|edgios/i.test(navigator.userAgent);
-    function alertIos() {
-        document.getElementById('installText').textContent = 'Tap Share, then "Add to Home Screen"';
-        document.getElementById('installBtn').hidden = true;
     }
-    if (isIos && isSafari && !recentlyDismissed()) {
-        document.getElementById('installText').textContent = 'Install: tap Share ⎙ then "Add to Home Screen"';
-        document.getElementById('installBtn').hidden = true;
-        banner.hidden = false;
+    bannerBtn.addEventListener('click', install);
+    topBtn.addEventListener('click', install);
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferred = e;
+        topBtn.hidden = false;
+        if (!recentlyDismissed()) banner.hidden = false;
+    });
+    window.addEventListener('appinstalled', () => { banner.hidden = true; topBtn.hidden = true; });
+
+    if (iosManual) {
+        topBtn.hidden = false;
+        if (!recentlyDismissed()) {
+            text.textContent = 'Install: tap Share ⎙ then "Add to Home Screen"';
+            bannerBtn.hidden = true;
+            banner.hidden = false;
+        }
     }
 })();

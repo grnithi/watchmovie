@@ -248,3 +248,12 @@ img { display: block; max-width: 100%; }
     background: linear-gradient(135deg, var(--accent), var(--accent-2));
 }
 .install-close { color: var(--muted); padding: 4px 6px; }
+
+/* Permanent install button in the top bar */
+.install-top {
+    display: inline-flex; align-items: center; gap: 4px; height: 38px; padding: 0 12px; border-radius: 10px;
+    font-size: .8rem; font-weight: 600; color: #fff; white-space: nowrap;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+}
+.install-top[hidden] { display: none; }
+@media (max-width: 420px) { .install-top span { display: none; } .install-top { padding: 0 10px; } }
