@@ -420,11 +420,41 @@
     // Dismissing only hides the banner until the next page load (nothing is remembered).
     document.getElementById('installClose').addEventListener('click', () => { banner.hidden = true; });
 
-    const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
-    const isSafari = /safari/i.test(navigator.userAgent) && !/crios|fxios|edgios/i.test(navigator.userAgent);
-    const iosManual = isIos && isSafari; // Safari has no install event: show instructions instead
+    // iOS has no install API: guide the user through Share -> Add to Home Screen instead.
+    const ua = navigator.userAgent;
+    const isIos = /iphone|ipad|ipod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const isIpad = isIos && !/iphone|ipod/i.test(ua);
+    const iosKind = !isIos ? '' :
+        (/FBAN|FBAV|FB_IAB|Instagram|Line\/|Twitter|WhatsApp|Snapchat|LinkedInApp|GSA\//i.test(ua) || !/Safari\//.test(ua)) ? 'inapp' :
+        /CriOS|FxiOS|EdgiOS|OPiOS/i.test(ua) ? 'chrome' : 'safari';
+    const SHARE_ICON = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px"><path d="M12 3v12M8 7l4-4 4 4"/><path d="M5 11v9h14v-9"/></svg>';
+
+    function showIosGuide() {
+        let steps, arrow = '';
+        if (iosKind === 'inapp') {
+            steps = ['Tap the <b>⋯</b> or <b>compass</b> icon in this screen\'s corner', 'Choose <b>Open in Safari</b>', 'In Safari, tap <b>Share</b> ' + SHARE_ICON + ' then <b>Add to Home Screen</b>'];
+        } else if (iosKind === 'chrome' || isIpad) {
+            steps = ['Tap the <b>Share</b> ' + SHARE_ICON + ' icon at the top right', 'Scroll and tap <b>Add to Home Screen</b>', 'Tap <b>Add</b>'];
+            arrow = '<div class="ios-arrow top">⬆</div>';
+        } else {
+            steps = ['Tap the <b>Share</b> ' + SHARE_ICON + ' button at the bottom (or <b>⋯</b> then <b>Share</b>)', 'Scroll and tap <b>Add to Home Screen</b>', 'Tap <b>Add</b>'];
+            arrow = '<div class="ios-arrow bottom">⬇</div>';
+        }
+        const el = document.createElement('div');
+        el.className = 'ios-guide';
+        el.innerHTML = '<div class="ios-guide-card" role="dialog" aria-label="Install What To Watch"><button class="ios-guide-close" aria-label="Close">✕</button>' +
+            '<h3>Install What To Watch</h3><ol>' + steps.map((t) => '<li>' + t + '</li>').join('') + '</ol>' +
+            (iosKind === 'inapp' ? '<button class="ios-copy">Copy link</button>' : '') + '</div>' + arrow;
+        el.addEventListener('click', (e) => { if (e.target === el || e.target.closest('.ios-guide-close')) el.remove(); });
+        const copy = el.querySelector('.ios-copy');
+        if (copy) copy.addEventListener('click', () => {
+            (navigator.clipboard ? navigator.clipboard.writeText(location.href) : Promise.reject()).then(() => { copy.textContent = 'Copied ✓'; }).catch(() => { copy.textContent = 'Press and hold the address to copy'; });
+        });
+        document.body.appendChild(el);
+    }
     const defaultText = text.textContent;
-    const resetBanner = () => { text.textContent = defaultText; bannerBtn.hidden = false; };
+    const defaultBtn = bannerBtn.textContent;
+    const resetBanner = () => { text.textContent = defaultText; bannerBtn.textContent = defaultBtn; bannerBtn.hidden = false; };
     let deferred = null;
 
     async function install() {
@@ -433,11 +463,11 @@
             await deferred.userChoice.catch(() => {});
             deferred = null;
             banner.hidden = true;
+        } else if (isIos) {
+            showIosGuide();
         } else {
-            // No install event (iOS Safari, incognito, in-app browsers...): show manual steps.
-            text.textContent = iosManual
-                ? 'Tap Share ⎙ then "Add to Home Screen"'
-                : 'Open your browser menu ⋮ and choose "Install app" or "Add to Home screen" (not available in incognito)';
+            // No install event (incognito, in-app browsers...): show manual steps.
+            text.textContent = 'Open your browser menu ⋮ and choose "Install app" or "Add to Home screen" (not available in incognito)';
             bannerBtn.hidden = true;
             banner.hidden = false;
         }
@@ -455,9 +485,9 @@
 
     // Show the banner on every page load (unless running as the installed app).
     if (!standalone) {
-        if (iosManual) {
-            text.textContent = 'Install: tap Share ⎙ then "Add to Home Screen"';
-            bannerBtn.hidden = true;
+        if (isIos) {
+            text.textContent = iosKind === 'inapp' ? 'Open in Safari to install this app' : 'Install this app on your iPhone';
+            bannerBtn.textContent = 'How?';
         }
         banner.hidden = false;
     }

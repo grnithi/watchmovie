@@ -257,3 +257,19 @@ img { display: block; max-width: 100%; }
 }
 .install-top[hidden] { display: none; }
 @media (max-width: 420px) { .install-top span { display: none; } .install-top { padding: 0 10px; } }
+
+/* iOS install guide */
+.ios-guide { position: fixed; inset: 0; z-index: 100; background: rgba(0, 0, 0, .65); display: grid; place-items: center; padding: 20px; }
+.ios-guide-card {
+    position: relative; width: 100%; max-width: 360px; padding: 20px 18px 18px; border-radius: var(--radius);
+    background: var(--surface-2); border: 1px solid var(--line); box-shadow: 0 12px 40px rgba(0, 0, 0, .5);
+}
+.ios-guide-card h3 { margin: 0 0 12px; font-family: var(--display); font-size: 1.05rem; }
+.ios-guide-card ol { margin: 0; padding-left: 20px; display: grid; gap: 10px; font-size: .9rem; line-height: 1.4; }
+.ios-guide-close { position: absolute; top: 8px; right: 10px; color: var(--muted); padding: 4px 6px; }
+.ios-copy { margin-top: 14px; padding: 8px 14px; border-radius: 10px; font-weight: 600; color: #fff; background: linear-gradient(135deg, var(--accent), var(--accent-2)); }
+.ios-arrow { position: fixed; font-size: 2.2rem; color: #fff; text-shadow: 0 2px 10px rgba(0, 0, 0, .6); animation: ios-bounce 1s ease-in-out infinite; }
+.ios-arrow.bottom { bottom: calc(14px + env(safe-area-inset-bottom)); left: 50%; margin-left: -.5em; }
+.ios-arrow.top { top: calc(14px + env(safe-area-inset-top)); right: 18px; }
+.ios-arrow.top { --d: -1; }
+@keyframes ios-bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(calc(10px * var(--d, 1))); } }
