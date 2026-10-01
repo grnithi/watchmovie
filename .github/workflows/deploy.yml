@@ -25,6 +25,8 @@ jobs:
           TMDB_ACCESS_TOKEN: ${{ secrets.TMDB_ACCESS_TOKEN }}
           WATCHMODE_API_KEY: ${{ secrets.WATCHMODE_API_KEY }}
           STATS_KEY: ${{ secrets.STATS_KEY }}
+          TURNSTILE_SITE_KEY: ${{ secrets.TURNSTILE_SITE_KEY }}
+          TURNSTILE_SECRET: ${{ secrets.TURNSTILE_SECRET }}
         run: |
           if [ -z "$TMDB_ACCESS_TOKEN" ]; then echo "::error::TMDB_ACCESS_TOKEN secret is missing"; exit 1; fi
           {
@@ -32,6 +34,10 @@ jobs:
             printf "define('TMDB_ACCESS_TOKEN', '%s');\n" "$TMDB_ACCESS_TOKEN"
             printf "define('WATCHMODE_API_KEY', '%s');\n" "${WATCHMODE_API_KEY:-}"
             if [ -n "$STATS_KEY" ]; then printf "define('STATS_KEY', '%s');\n" "$STATS_KEY"; fi
+            if [ -n "$TURNSTILE_SITE_KEY" ] && [ -n "$TURNSTILE_SECRET" ]; then
+              printf "define('TURNSTILE_SITE_KEY', '%s');\n" "$TURNSTILE_SITE_KEY"
+              printf "define('TURNSTILE_SECRET', '%s');\n" "$TURNSTILE_SECRET"
+            fi
           } > secrets.php
 
       # Uploads only changed files over encrypted FTPS. Deploy state is tracked in a

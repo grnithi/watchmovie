@@ -2,6 +2,7 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
     RewriteRule ^(india|usa)/?$ index.php [L,NC]
+    RewriteRule ^contact/?$ contact.php [L,NC]
 </IfModule>
 
 # Hide deploy bookkeeping file

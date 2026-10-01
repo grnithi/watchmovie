@@ -273,3 +273,15 @@ img { display: block; max-width: 100%; }
 .ios-arrow.top { top: calc(14px + env(safe-area-inset-top)); right: 18px; }
 .ios-arrow.top { --d: -1; }
 @keyframes ios-bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(calc(10px * var(--d, 1))); } }
+
+/* ---------- contact page ---------- */
+.contact { max-width: 560px; }
+.contact h1 { font-family: var(--display); margin: 8px 0 6px; }
+.contact-form { display: grid; gap: 14px; margin-top: 18px; }
+.contact-form label { display: grid; gap: 6px; font-size: 0.85rem; color: var(--muted); font-weight: 600; }
+.contact-form input, .contact-form textarea { font: inherit; color: var(--text, #fff); background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; width: 100%; }
+.contact-form input:focus, .contact-form textarea:focus { outline: none; border-color: var(--accent); }
+.contact-send { justify-self: start; padding: 10px 22px; }
+.contact-hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+.contact-err { color: #ff8b8b; font-size: 0.85rem; font-weight: 500; }
+.contact-ok { color: #7be0a0; margin: 14px 0 18px; }

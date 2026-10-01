@@ -117,6 +117,7 @@ header('Cache-Control: no-cache, must-revalidate'); // always fetch the latest p
 
     <footer class="footer container">
         <span id="footerText">Release dates and availability can change — check the platform for the latest.</span>
+    <a class="footer-link" href="contact">✉ Contact</a>
     <a class="footer-link" href="https://radiovibe.app/">← Back to RadioVibe</a>
     </footer>
 

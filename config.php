@@ -39,3 +39,10 @@ if (!defined('DISABLE_CACHE')) {
     $host = strtolower(explode(':', $_SERVER['HTTP_HOST'] ?? '')[0]);
     define('DISABLE_CACHE', in_array($host, ['localhost', '127.0.0.1', '[::1]'], true) || str_ends_with($host, '.local') || str_ends_with($host, '.test'));
 }
+
+// Contact form: where messages are delivered (override in secrets.php if needed).
+if (!defined('CONTACT_TO')) {
+    define('CONTACT_TO', 'yadheendran@gmail.com');
+}
+// Optional Cloudflare Turnstile (free, privacy-friendly CAPTCHA). Define TURNSTILE_SITE_KEY and
+// TURNSTILE_SECRET in secrets.php to switch it on; the form works without it.
