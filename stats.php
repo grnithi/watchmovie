@@ -13,6 +13,18 @@ $keyQs = defined('STATS_KEY') && STATS_KEY !== '' ? '&key=' . urlencode(STATS_KE
 
 $logFile = __DIR__ . '/cache/traffic_visits.json';
 
+// Clear the movie data caches (feed, details, base info, genres) so the next visit fetches fresh data.
+// Visitor log, contact limits and geo cache are left alone.
+$clearMsg = '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'clear_cache') {
+    $n = 0;
+    foreach (['feed', 'details', 'base'] as $sub) {
+        foreach (glob(__DIR__ . "/cache/$sub/*.json") ?: [] as $f) { if (@unlink($f)) $n++; }
+    }
+    if (@unlink(__DIR__ . '/cache/genres_all.json')) $n++;
+    $clearMsg = "Cleared $n cached files. Next visits will fetch fresh data.";
+}
+
 // Option to filter bot traffic
 $showAll = isset($_GET['all']) && $_GET['all'] === '1';
 
@@ -146,11 +158,19 @@ $categoryBadgeColors = [
             <a href="?all=<?= $showAll ? '0' : '1' ?><?= $keyQs ?>" class="px-3 py-1.5 text-xs font-semibold rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 shadow-sm transition">
                 <?= $showAll ? '✓ Showing All (Switch to Human Only)' : 'Filter: Human Only (Show Bots)' ?>
             </a>
+            <form method="post" action="?<?= ltrim($keyQs, '&') ?>" onsubmit="return confirm('Clear the movie cache? The next visitors will trigger fresh API calls.')">
+                <input type="hidden" name="action" value="clear_cache">
+                <button type="submit" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-red-600 text-white hover:bg-red-700 shadow-sm transition">🗑 Clear cache</button>
+            </form>
             <button onclick="window.location.reload()" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-blue-600 text-white hover:bg-blue-700 shadow-sm transition">
                 ↻ Refresh
             </button>
         </div>
     </div>
+
+    <?php if ($clearMsg): ?>
+    <div class="mb-6 px-4 py-3 rounded-lg bg-green-50 border border-green-200 text-green-800 text-sm"><?= htmlspecialchars($clearMsg) ?></div>
+    <?php endif; ?>
 
     <!-- Summary Cards -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">

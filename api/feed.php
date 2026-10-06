@@ -24,8 +24,8 @@ header('Access-Control-Allow-Methods: GET');
 
 require_once __DIR__ . '/../config.php';
 
-// Local dev: never cache. Live: browsers may reuse a response for 10 minutes (server cache lasts until Wednesday).
-header('Cache-Control: ' . ((defined('DISABLE_CACHE') && DISABLE_CACHE) ? 'no-store' : 'public, max-age=600'));
+// Local dev: never cache. Live: browsers may reuse a response for 5 minutes (server cache lasts CACHE_DURATION, 6h).
+header('Cache-Control: ' . ((defined('DISABLE_CACHE') && DISABLE_CACHE) ? 'no-store' : 'public, max-age=300'));
 
 const LANGUAGES = [
     'ta' => 'Tamil',
@@ -56,6 +56,11 @@ function cacheWeekStart(): DateTime {
     $d = new DateTime('today', $tz);
     $back = ((int)$d->format('w') - 3 + 7) % 7; // 3 = Wednesday
     return $d->modify("-{$back} days");
+}
+
+/** Server cache lifetime in seconds (CACHE_DURATION, 6h by default). */
+function cacheTtl(): int {
+    return defined('CACHE_DURATION') ? (int)CACHE_DURATION : 21600;
 }
 
 /** True when the file was written during the current Wednesday-to-Tuesday cache week (never in local dev). */
@@ -170,7 +175,7 @@ function dateWindow(string $range): array {
 
 /**
  * Per-title details via one call each (parallel): providers + regional release dates + runtime.
- * Cached per title for 12h. Returns id => slim array.
+ * Cached per title for CACHE_DURATION. Returns id => slim array.
  */
 function getDetails(array $ids, string $type): array {
     $dir = cacheDir('details');
@@ -178,7 +183,7 @@ function getDetails(array $ids, string $type): array {
     $need = [];
     foreach ($ids as $id) {
         $file = "$dir/{$type}_{$id}.json";
-        if (cacheFreshThisWeek($file)) {
+        if (cacheFresh($file, cacheTtl())) {
             $c = json_decode((string)file_get_contents($file), true);
             if (is_array($c)) {
                 $out[$id] = $c;
@@ -262,7 +267,7 @@ function getWatchmodeAdditions(string $type, string $region, string $from, strin
     $file = cacheDir('feed') . '/wm_' . $from . '_' . $to . '.json';
     $ttl = defined('CACHE_DURATION') ? CACHE_DURATION : 21600;
     $rows = null;
-    if (cacheFreshThisWeek($file)) {
+    if (cacheFresh($file, cacheTtl())) {
         $rows = json_decode((string)file_get_contents($file), true);
     }
     if (!is_array($rows)) {
@@ -369,7 +374,7 @@ try {
 
     $cacheFile = cacheDir('feed') . "/{$mode}_{$type}_{$region}_{$range}_" . cacheWeekStart()->format('Ymd') . '_v2.json'; // bump _vN to invalidate all cached feeds on deploy
     $ttl = defined('CACHE_DURATION') ? CACHE_DURATION : 21600;
-    if (!$force && cacheFreshThisWeek($cacheFile)) {
+    if (!$force && cacheFresh($cacheFile, cacheTtl())) {
         $cached = json_decode((string)file_get_contents($cacheFile), true);
         if (is_array($cached)) {
             $cached['cached'] = true;
